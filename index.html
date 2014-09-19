@@ -1,0 +1,155 @@
+<html>
+  <head>
+    <title>Yet Another Mortgage Calculator</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1.1", {packages:["corechart"]});
+
+      function drawChart() {
+
+        var balance = $('#amount').val();
+        var terms = $('#term').val().split("/");
+        var rates = $('#rate').val().split("/");
+        var extraPayment = $('#extra-payment').val();
+
+        if(terms.length != rates.length) {
+          return
+        }
+
+        var payment_data = [];
+        var balance_data = [];
+        var total_interest = 0;
+
+        for(i=0; i < terms.length; i++) {
+          term = 0
+          for(x = i; x < terms.length; x++) {
+            term += terms[x] * 12
+          }
+          monthly_rate = rates[i] / 12;
+          payment = Math.round((monthly_rate/100 * balance * Math.pow((1 + monthly_rate/100), term) / (Math.pow((1 + monthly_rate/100), term) - 1)) * 100) / 100 + Math.round(extraPayment)
+
+          for(index = 0; index <= terms[i] * 12 - 1; index++) {
+            interest = balance * monthly_rate / 100
+            total_interest += interest
+            principal = payment - interest
+            balance = balance - principal;
+            payment_data.push([(index + 1).toString(), Math.round(interest * 100)/ 100, Math.round(principal * 100) / 100, payment])
+            balance_data.push([(index + 1).toString(), Math.round(balance * 100) / 100, Math.round(total_interest * 100) / 100])
+            if(balance < 0) {
+               break;
+            }
+          }
+        }
+
+        payment_data.unshift(["", "Interest ($" + (Math.round(total_interest * 100) / 100).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ")", "Principal", "Payment"])
+        balance_data.unshift(["", "Balance", "Total Interest"])
+
+        var data = new google.visualization.arrayToDataTable(payment_data);
+
+        var options = {
+          'title': 'Monthly Payment Distribution',
+          'legend': 'bottom'
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('payment_chart_div'));
+        chart.draw(data, options);
+
+        var data = new google.visualization.arrayToDataTable(balance_data);
+
+        var options = {
+          'title': 'Balance & Interest',
+          'legend': 'bottom'
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('balance_chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+    <style type="text/css">
+      /* Space out content a bit */
+      body {
+      padding-top: 20px;
+      padding-bottom: 20px;
+      }
+      /* Custom page header */
+      .header {
+      border-bottom: 1px solid #e5e5e5;
+      }
+      /* Make the masthead heading the same height as the navigation */
+      .header h3 {
+      padding-bottom: 10px;
+      margin-top: 0;
+      margin-bottom: 0;
+      line-height: 40px;
+      }
+      form {
+      padding-top: 20px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h3 class="text-muted">Mortgage Calculator<h3>
+      </div>
+      <p class="help-block">Enter your values to get the data</p>
+      <form class="form-horizontal" role="form">
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Mortgage Amount: </label>
+          <div class="input-group">
+            <div class="input-group col-sm-10">
+              <input type="text" class="form-control" id="amount" onblur="">
+              <div class="input-group-addon">$</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Interest Rate (Fixed or ARM): </label>
+          <div class="input-group">
+            <div class="input-group col-sm-2">
+              <input type="text" value="4" class="form-control" id="rate" onblur="">
+              <div class="input-group-addon">%</div>
+            </div>
+            <p class="help-block">Example: <br /><strong>4</strong> <i>for fixed rate of 4% APR for entire mortgage term</i>
+              <br /><strong>3.5/6</strong> <i>for ARM mortgage, where 3.5% APR is the fixed rate for first part of the mortagge term and 6% APR is the estimated rate for the rest part of the mortgage term.</i></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Mortgage Term (Fixed or ARM): </label>
+          <div class="input-group">
+            <div class="input-group col-sm-4">
+              <input type="text" value="30" class="form-control" id="term" onblur="">
+              <div class="input-group-addon">Years</div>
+            </div>
+            <p class="help-block">Example: <br /><strong>30</strong> <i>for fixed rate for 30 years</i>
+              <br /><strong>10/20</strong> <i>for ARM type of mortgage with 10 years of the fixed rate and 20 years with adjustable rate.</i></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Extra monthly payment: </label>
+          <div class="input-group">
+            <div class="input-group col-sm-12">
+              <input type="text" value="0" class="form-control" id="extra-payment" onblur="">
+              <div class="input-group-addon">$</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+           <button class="btn btn-primary pull-right" onclick="drawChart(); return false">Submit</button>
+        </div>
+      </form>
+      <div>
+        <div id="payment_chart_div" class="col-md-12" style="height: 400px"></div>
+        <div id="balance_chart_div" class="col-md-12" style="height: 400px;"></div>
+      </div>
+    </div>
+  </body>
+</html>

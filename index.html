@@ -16,9 +16,11 @@
         var rates = $('#rate').val().split("/");
         var extraPayment = $('#extra-payment').val() * 1;
         var extraPaymentOneTime = $('#extraPaymentOneTime').val() * 1;
+        var extraPaymentOneTimeMonth = $('#extraPaymentOneTimeMonth').val() * 1;
         var extraPaymentLength = $('#extra-payment-length').val() * 1;
         var pmi = $('#pmi').val() * 1;
         var closingCost = $('#closingCost').val() * 1;
+        var points = $('#points').val() * 1;
 
         if(terms.length != rates.length) {
           return
@@ -27,7 +29,7 @@
         var payment_data = [];
         var balance_data = [];
         var total_interest = 0;
-        var total_expences = closingCost;
+        var total_expences = closingCost + balance / 100 * points;
 
         for(i=0; i < terms.length; i++) {
           term = 0
@@ -35,13 +37,13 @@
             term += terms[x] * 12
           }
           monthly_rate = rates[i] / 12;
+
           defaultPayment = Math.round((monthly_rate/100 * balance * Math.pow((1 + monthly_rate/100), term) / (Math.pow((1 + monthly_rate/100), term) - 1)) * 100) / 100;
 
-          if (i == 0) {
-            balance -= extraPaymentOneTime;
-          }
-
           for(index = 0; index <= terms[i] * 12 - 1; index++) {
+            if (i == 0 && index == extraPaymentOneTimeMonth - 1) {
+              balance -= extraPaymentOneTime;
+            }
             payment = defaultPayment;
             if (index < extraPaymentLength) {
                payment = payment + extraPayment;
@@ -133,6 +135,16 @@
         </div>
 
         <div class="form-group">
+          <label class="col-sm-3 control-label">Points: </label>
+          <div class="input-group">
+            <div class="input-group col-sm-10">
+              <input type="text" class="form-control" id="points" onblur="">
+              <div class="input-group-addon">%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="col-sm-3 control-label">Mortgage Amount: </label>
           <div class="input-group">
             <div class="input-group col-sm-10">
@@ -173,7 +185,7 @@
               <input type="text" value="0" class="form-control" id="extra-payment" onblur="">
               <div class="input-group-addon">$</div>
               <span class="input-group-addon" style="background-color: #fff; border: none">x</span>
-              <input type="text" value="0" class="form-control" id="extra-payment-length" onblur="">
+              <input type="text" value="" class="form-control" id="extra-payment-length" onblur="">
               <div class="input-group-addon">mo.</div>
             </div>
           </div>
@@ -182,9 +194,12 @@
         <div class="form-group">
           <label class="col-sm-3 control-label">Extra Payment (one time): </label>
           <div class="input-group">
-            <div class="input-group col-sm-10">
-              <input type="text" class="form-control" id="extraPaymentOneTime" onblur="">
+            <div class="input-group col-sm-8">
+              <input type="text" value="0" class="form-control" id="extraPaymentOneTime" onblur="">
               <div class="input-group-addon">$</div>
+              <span class="input-group-addon" style="background-color: #fff; border: none">at</span>
+              <input type="text" value="" class="form-control" id="extraPaymentOneTimeMonth" onblur="">
+              <div class="input-group-addon">mo.</div>
             </div>
           </div>
         </div>

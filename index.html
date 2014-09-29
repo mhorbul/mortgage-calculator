@@ -10,10 +10,15 @@
 
       function drawChart() {
 
-        var balance = $('#amount').val();
+        var amount = $('#amount').val() * 1;
+        var balance = amount;
         var terms = $('#term').val().split("/");
         var rates = $('#rate').val().split("/");
-        var extraPayment = $('#extra-payment').val();
+        var extraPayment = $('#extra-payment').val() * 1;
+        var extraPaymentOneTime = $('#extraPaymentOneTime').val() * 1;
+        var extraPaymentLength = $('#extra-payment-length').val() * 1;
+        var pmi = $('#pmi').val() * 1;
+        var closingCost = $('#closingCost').val() * 1;
 
         if(terms.length != rates.length) {
           return
@@ -22,6 +27,7 @@
         var payment_data = [];
         var balance_data = [];
         var total_interest = 0;
+        var total_expences = closingCost;
 
         for(i=0; i < terms.length; i++) {
           term = 0
@@ -29,23 +35,40 @@
             term += terms[x] * 12
           }
           monthly_rate = rates[i] / 12;
-          payment = Math.round((monthly_rate/100 * balance * Math.pow((1 + monthly_rate/100), term) / (Math.pow((1 + monthly_rate/100), term) - 1)) * 100) / 100 + Math.round(extraPayment)
+          defaultPayment = Math.round((monthly_rate/100 * balance * Math.pow((1 + monthly_rate/100), term) / (Math.pow((1 + monthly_rate/100), term) - 1)) * 100) / 100;
+
+          if (i == 0) {
+            balance -= extraPaymentOneTime;
+          }
 
           for(index = 0; index <= terms[i] * 12 - 1; index++) {
+            payment = defaultPayment;
+            if (index < extraPaymentLength) {
+               payment = payment + extraPayment;
+            }
             interest = balance * monthly_rate / 100
             total_interest += interest
+            total_expences += interest;
             principal = payment - interest
-            balance = balance - principal;
-            payment_data.push([(index + 1).toString(), Math.round(interest * 100)/ 100, Math.round(principal * 100) / 100, payment])
-            balance_data.push([(index + 1).toString(), Math.round(balance * 100) / 100, Math.round(total_interest * 100) / 100])
-            if(balance < 0) {
+            if (principal > balance) {
+               balance = 0;
+            } else {
+              balance = balance - principal;
+            }
+            if (pmi > 0 && balance > amount * 0.8) {
+              payment = payment + pmi;
+              total_expences += pmi;
+            }
+            payment_data.push([(index + 1).toString(), Math.round(interest * 100)/ 100, Math.round(principal * 100) / 100, Math.round(payment * 100) / 100])
+            balance_data.push([(index + 1).toString(), Math.round(balance * 100) / 100, Math.round(total_interest * 100) / 100, Math.round(total_expences * 100) / 100])
+            if(balance == 0) {
                break;
             }
           }
         }
 
         payment_data.unshift(["", "Interest ($" + (Math.round(total_interest * 100) / 100).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ")", "Principal", "Payment"])
-        balance_data.unshift(["", "Balance", "Total Interest"])
+        balance_data.unshift(["", "Balance", "Total Interest ($" + (Math.round(total_interest * 100) / 100).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ")", "Total Expences ($" + (Math.round(total_expences * 100) / 100).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ")"])
 
         var data = new google.visualization.arrayToDataTable(payment_data);
 
@@ -100,6 +123,16 @@
       <form class="form-horizontal" role="form">
 
         <div class="form-group">
+          <label class="col-sm-3 control-label">Closing Cost: </label>
+          <div class="input-group">
+            <div class="input-group col-sm-10">
+              <input type="text" class="form-control" id="closingCost" onblur="">
+              <div class="input-group-addon">$</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="col-sm-3 control-label">Mortgage Amount: </label>
           <div class="input-group">
             <div class="input-group col-sm-10">
@@ -134,14 +167,38 @@
         </div>
 
         <div class="form-group">
-          <label class="col-sm-3 control-label">Extra monthly payment: </label>
+          <label class="col-sm-3 control-label">Extra payment (monthly): </label>
           <div class="input-group">
-            <div class="input-group col-sm-12">
+            <div class="input-group col-sm-8">
               <input type="text" value="0" class="form-control" id="extra-payment" onblur="">
+              <div class="input-group-addon">$</div>
+              <span class="input-group-addon" style="background-color: #fff; border: none">x</span>
+              <input type="text" value="0" class="form-control" id="extra-payment-length" onblur="">
+              <div class="input-group-addon">mo.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Extra Payment (one time): </label>
+          <div class="input-group">
+            <div class="input-group col-sm-10">
+              <input type="text" class="form-control" id="extraPaymentOneTime" onblur="">
               <div class="input-group-addon">$</div>
             </div>
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">PMI: </label>
+          <div class="input-group">
+            <div class="input-group col-sm-7">
+              <input type="text" value="0" class="form-control" id="pmi" onblur="">
+              <div class="input-group-addon">$</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
            <button class="btn btn-primary pull-right" onclick="drawChart(); return false">Submit</button>
         </div>
